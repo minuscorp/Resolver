@@ -177,6 +177,7 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         let key = Int(bitPattern: ObjectIdentifier(Service.self))
+        print("Key for \(String(describing: type)) is: \(key)")
         let factory: ResolverFactoryAnyArguments = { (_,_) in factory() }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
         add(registration: registration, with: key, name: name)
@@ -197,6 +198,7 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         let key = Int(bitPattern: ObjectIdentifier(Service.self))
+        print("Key for \(String(describing: type)) is: \(key)")
         let factory: ResolverFactoryAnyArguments = { (r,_) in factory(r) }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
         add(registration: registration, with: key, name: name)
@@ -217,6 +219,7 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         let key = Int(bitPattern: ObjectIdentifier(Service.self))
+        print("Key for \(String(describing: type)) is: \(key)")
         let factory: ResolverFactoryAnyArguments = { (r,a) in factory(r, Args(a)) }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory )
         add(registration: registration, with: key, name: name)
@@ -304,6 +307,7 @@ public final class Resolver {
     /// the supplied type and name.
     private final func lookup<Service>(_ type: Service.Type, name: Resolver.Name?) -> ResolverRegistration<Service>? {
         let key = Int(bitPattern: ObjectIdentifier(Service.self))
+        print("Key for \(String(describing: type)) is: \(key)")
         if let name = name?.rawValue {
             if let registration = namedRegistrations["\(key):\(name)"] as? ResolverRegistration<Service> {
                 return registration
