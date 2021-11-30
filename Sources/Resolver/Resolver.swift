@@ -177,7 +177,7 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         let key = Int(bitPattern: ObjectIdentifier(Service.self))
-        print("Key for \(String(describing: type)) is: \(key)")
+        print("Key for \(String(reflecting: type.self)) is: \(key)")
         let factory: ResolverFactoryAnyArguments = { (_,_) in factory() }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
         add(registration: registration, with: key, name: name)
@@ -198,7 +198,7 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         let key = Int(bitPattern: ObjectIdentifier(Service.self))
-        print("Key for \(String(describing: type)) is: \(key)")
+        print("Key for \(String(reflecting: type.self)) is: \(key)")
         let factory: ResolverFactoryAnyArguments = { (r,_) in factory(r) }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
         add(registration: registration, with: key, name: name)
