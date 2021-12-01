@@ -446,13 +446,14 @@ private var registrationNeeded: Bool = true
 
 @inline(__always)
 private func registrationCheck() {
-    guard registrationNeeded else {
-        return
-    }
-    if let registering = (Resolver.root as Any) as? ResolverRegistering {
-        type(of: registering).registerAllServices()
-    }
-    registrationNeeded = false
+    return
+//    guard registrationNeeded else {
+//        return
+//    }
+//    if let registering = (Resolver.root as Any) as? ResolverRegistering {
+//        type(of: registering).registerAllServices()
+//    }
+//    registrationNeeded = false
 }
 
 public typealias ResolverFactory<Service> = () -> Service?
