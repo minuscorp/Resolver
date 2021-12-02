@@ -218,7 +218,7 @@ public final class Resolver {
                                         factory: @escaping ResolverFactoryArgumentsN<Service>) -> ResolverOptions<Service> {
         lock.lock()
         defer { lock.unlock() }
-        let key = String(reflecting: type.self)
+        let key = Self.fullyQualifiedName(type)
         print("\(#function) \(key)")
         let factory: ResolverFactoryAnyArguments = { (r,a) in factory(r, Args(a)) }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory )
@@ -239,15 +239,9 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         registrationCheck()
-        var key = String(reflecting: type.self)
-        if let lessThan = key.range(of: "<") {
-            key.removeSubrange(key.startIndex...lessThan.lowerBound)
-        }
-        if let moreThan = key.range(of: ">") {
-            key.removeSubrange(moreThan.lowerBound..<key.endIndex)
-        }
+        let key = fullyQualifiedName(type)
         print("\(#function) \(key)")
-        if let registration = root.lookup(type, name: name), let service = registration.resolve(resolver: root, args: args) {
+        if let registration = root.lookup(type, key: key, name: name), let service = registration.resolve(resolver: root, args: args) {
             return service
         }
         fatalError("RESOLVER: '\(Service.self):\(name?.rawValue ?? "NONAME")' not resolved. To disambiguate optionals use resolver.optional().")
@@ -266,7 +260,7 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         registrationCheck()
-        if let registration = lookup(type, name: name), let service = registration.resolve(resolver: self, args: args) {
+        if let registration = lookup(type, key: Self.fullyQualifiedName(type), name: name), let service = registration.resolve(resolver: self, args: args) {
             return service
         }
         fatalError("RESOLVER: '\(Service.self):\(name?.rawValue ?? "NONAME")' not resolved. To disambiguate optionals use resolver.optional().")
@@ -284,7 +278,7 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         registrationCheck()
-        if let registration = root.lookup(type, name: name), let service = registration.resolve(resolver: root, args: args) {
+        if let registration = root.lookup(type, key: fullyQualifiedName(type), name: name), let service = registration.resolve(resolver: root, args: args) {
             return service
         }
         return nil
@@ -303,7 +297,7 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         registrationCheck()
-        if let registration = lookup(type, name: name), let service = registration.resolve(resolver: self, args: args) {
+        if let registration = lookup(type, key: Self.fullyQualifiedName(type), name: name), let service = registration.resolve(resolver: self, args: args) {
             return service
         }
         return nil
@@ -313,9 +307,7 @@ public final class Resolver {
 
     /// Internal function searches the current and child registries for a ResolverRegistration<Service> that matches
     /// the supplied type and name.
-    private final func lookup<Service>(_ type: Service.Type, name: Resolver.Name?) -> ResolverRegistration<Service>? {
-        let key = String(reflecting: type.self)
-        print("\(#function) \(key)")
+    private final func lookup<Service>(_ type: Service.Type, key: FullyQualifiedName, name: Resolver.Name?) -> ResolverRegistration<Service>? {
         if let name = name?.rawValue {
             if let registration = namedRegistrations["\(key):\(name)"] as? ResolverRegistration<Service> {
                 return registration
@@ -324,7 +316,7 @@ public final class Resolver {
             return registration
         }
         for child in childContainers {
-            if let registration = child.lookup(type, name: name) {
+            if let registration = child.lookup(type, key: key, name: name) {
                 return registration
             }
         }
@@ -338,6 +330,17 @@ public final class Resolver {
         } else {
             typedRegistrations[key] = registration
         }
+    }
+    
+    private static func fullyQualifiedName<Service>(_ type: Service.Type) -> String {
+        var key = String(reflecting: type.self)
+        if let lessThan = key.range(of: "<") {
+            key.removeSubrange(key.startIndex...lessThan.lowerBound)
+        }
+        if let moreThan = key.range(of: ">") {
+            key.removeSubrange(moreThan.lowerBound..<key.endIndex)
+        }
+        return key
     }
 
     typealias FullyQualifiedName = String
