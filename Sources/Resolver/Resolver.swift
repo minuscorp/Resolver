@@ -176,8 +176,10 @@ public final class Resolver {
                                         factory: @escaping ResolverFactory<Service>) -> ResolverOptions<Service> {
         lock.lock()
         defer { lock.unlock() }
-        let key = Int(bitPattern: ObjectIdentifier(Service.self))
+        let key = Int(bitPattern: ObjectIdentifier(type))
         print("\(#function) Key for \(String(reflecting: type.self)) is: \(key)")
+        let myKey = Int(bitPattern: unsafeBitCast(type, to: UInt.self))
+        print("\(#function) New Key for \(String(reflecting: type.self)) is: \(myKey)")
         let factory: ResolverFactoryAnyArguments = { (_,_) in factory() }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
         add(registration: registration, with: key, name: name)
@@ -197,7 +199,7 @@ public final class Resolver {
                                         factory: @escaping ResolverFactoryResolver<Service>) -> ResolverOptions<Service> {
         lock.lock()
         defer { lock.unlock() }
-        let key = Int(bitPattern: ObjectIdentifier(Service.self))
+        let key = Int(bitPattern: ObjectIdentifier(type))
         print("\(#function) Key for \(String(reflecting: type.self)) is: \(key)")
         let factory: ResolverFactoryAnyArguments = { (r,_) in factory(r) }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
@@ -218,7 +220,7 @@ public final class Resolver {
                                         factory: @escaping ResolverFactoryArgumentsN<Service>) -> ResolverOptions<Service> {
         lock.lock()
         defer { lock.unlock() }
-        let key = Int(bitPattern: ObjectIdentifier(Service.self))
+        let key = Int(bitPattern: ObjectIdentifier(type))
         print("\(#function) Key for \(String(reflecting: type.self)) is: \(key)")
         let factory: ResolverFactoryAnyArguments = { (r,a) in factory(r, Args(a)) }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory )
@@ -241,6 +243,8 @@ public final class Resolver {
         registrationCheck()
         let key = Int(bitPattern: ObjectIdentifier(Service.self))
         print("\(#function) Key for \(String(reflecting: type.self)) is: \(key)")
+        let myKey = Int(bitPattern: unsafeBitCast(type, to: UInt.self))
+        print("\(#function) New Key for \(String(reflecting: type.self)) is: \(myKey)")
         if let registration = root.lookup(type, name: name), let service = registration.resolve(resolver: root, args: args) {
             return service
         }
