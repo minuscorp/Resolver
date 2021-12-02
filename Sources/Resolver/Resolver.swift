@@ -240,13 +240,11 @@ public final class Resolver {
         defer { lock.unlock() }
         registrationCheck()
         var key = String(reflecting: type.self)
-        if let type = type as? Optional<Service> {
-            switch type {
-            case .some(let service):
-                key = String(reflecting: service)
-            case .none:
-                preconditionFailure("Never gonna happen")
-            }
+        if let lessThan = key.range(of: "<") {
+            key.removeSubrange(key.startIndex...lessThan.lowerBound)
+        }
+        if let moreThan = key.range(of: ">") {
+            key.removeSubrange(moreThan.lowerBound..<key.endIndex)
         }
         print("\(#function) \(key)")
         if let registration = root.lookup(type, name: name), let service = registration.resolve(resolver: root, args: args) {
