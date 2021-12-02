@@ -176,10 +176,8 @@ public final class Resolver {
                                         factory: @escaping ResolverFactory<Service>) -> ResolverOptions<Service> {
         lock.lock()
         defer { lock.unlock() }
-        let key = Int(bitPattern: ObjectIdentifier(type))
-        print("\(#function) Key for \(String(reflecting: type.self)) is: \(key)")
-        let myKey = Int(bitPattern: unsafeBitCast(type, to: UInt.self))
-        print("\(#function) New Key for \(String(reflecting: type.self)) is: \(myKey)")
+        let key = String(reflecting: type.self)
+        print("\(#function) \(key)")
         let factory: ResolverFactoryAnyArguments = { (_,_) in factory() }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
         add(registration: registration, with: key, name: name)
@@ -199,8 +197,8 @@ public final class Resolver {
                                         factory: @escaping ResolverFactoryResolver<Service>) -> ResolverOptions<Service> {
         lock.lock()
         defer { lock.unlock() }
-        let key = Int(bitPattern: ObjectIdentifier(type))
-        print("\(#function) Key for \(String(reflecting: type.self)) is: \(key)")
+        let key = String(reflecting: type.self)
+        print("\(#function) \(key)")
         let factory: ResolverFactoryAnyArguments = { (r,_) in factory(r) }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
         add(registration: registration, with: key, name: name)
@@ -220,8 +218,8 @@ public final class Resolver {
                                         factory: @escaping ResolverFactoryArgumentsN<Service>) -> ResolverOptions<Service> {
         lock.lock()
         defer { lock.unlock() }
-        let key = Int(bitPattern: ObjectIdentifier(type))
-        print("\(#function) Key for \(String(reflecting: type.self)) is: \(key)")
+        let key = String(reflecting: type.self)
+        print("\(#function) \(key)")
         let factory: ResolverFactoryAnyArguments = { (r,a) in factory(r, Args(a)) }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory )
         add(registration: registration, with: key, name: name)
@@ -241,10 +239,8 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         registrationCheck()
-        let key = Int(bitPattern: ObjectIdentifier(Service.self))
-        print("\(#function) Key for \(String(reflecting: type.self)) is: \(key)")
-        let myKey = Int(bitPattern: unsafeBitCast(type, to: UInt.self))
-        print("\(#function) New Key for \(String(reflecting: type.self)) is: \(myKey)")
+        let key = String(reflecting: type.self)
+        print("\(#function) \(key)")
         if let registration = root.lookup(type, name: name), let service = registration.resolve(resolver: root, args: args) {
             return service
         }
@@ -312,8 +308,8 @@ public final class Resolver {
     /// Internal function searches the current and child registries for a ResolverRegistration<Service> that matches
     /// the supplied type and name.
     private final func lookup<Service>(_ type: Service.Type, name: Resolver.Name?) -> ResolverRegistration<Service>? {
-        let key = Int(bitPattern: ObjectIdentifier(Service.self))
-        print("\(#function) Key for \(String(reflecting: type.self)) is: \(key)")
+        let key = String(reflecting: type.self)
+        print("\(#function) \(key)")
         if let name = name?.rawValue {
             if let registration = namedRegistrations["\(key):\(name)"] as? ResolverRegistration<Service> {
                 return registration
@@ -330,7 +326,7 @@ public final class Resolver {
     }
 
     /// Internal function adds a new registration to the proper container.
-    private final func add<Service>(registration: ResolverRegistration<Service>, with key: Int, name: Resolver.Name?) {
+    private final func add<Service>(registration: ResolverRegistration<Service>, with key: FullyQualifiedName, name: Resolver.Name?) {
         if let name = name?.rawValue {
             namedRegistrations["\(key):\(name)"] = registration
         } else {
@@ -338,10 +334,11 @@ public final class Resolver {
         }
     }
 
+    typealias FullyQualifiedName = String
     private let NONAME = "*"
     private let lock = Resolver.lock
     private var childContainers: [Resolver] = []
-    private var typedRegistrations = [Int : Any]()
+    private var typedRegistrations = [FullyQualifiedName : Any]()
     private var namedRegistrations = [String : Any]()
 }
 
@@ -450,14 +447,13 @@ private var registrationNeeded: Bool = true
 
 @inline(__always)
 private func registrationCheck() {
-    return
-//    guard registrationNeeded else {
-//        return
-//    }
-//    if let registering = (Resolver.root as Any) as? ResolverRegistering {
-//        type(of: registering).registerAllServices()
-//    }
-//    registrationNeeded = false
+    guard registrationNeeded else {
+        return
+    }
+    if let registering = (Resolver.root as Any) as? ResolverRegistering {
+        type(of: registering).registerAllServices()
+    }
+    registrationNeeded = false
 }
 
 public typealias ResolverFactory<Service> = () -> Service?
@@ -546,7 +542,7 @@ public struct ResolverOptions<Service> {
 /// ResolverRegistration base class provides storage for the registration keys, scope, and property mutator.
 public final class ResolverRegistration<Service> {
 
-    public let key: Int
+    public let key: String
     public let cacheKey: String
     
     fileprivate var factory: ResolverFactoryAnyArguments<Service>
@@ -554,7 +550,7 @@ public final class ResolverRegistration<Service> {
     
     fileprivate weak var resolver: Resolver?
 
-    public init(resolver: Resolver, key: Int, name: Resolver.Name?, factory: @escaping ResolverFactoryAnyArguments<Service>) {
+    public init(resolver: Resolver, key: String, name: Resolver.Name?, factory: @escaping ResolverFactoryAnyArguments<Service>) {
         self.resolver = resolver
         self.key = key
         if let namedService = name {
