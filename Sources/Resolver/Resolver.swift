@@ -314,6 +314,8 @@ public final class Resolver {
             }
         } else if let registration = typedRegistrations[key] as? ResolverRegistration<Service> {
             return registration
+        } else if let _ = typedRegistrations[key] as? ResolverRegistration<Service?> {
+            return (typedRegistrations[key] as! ResolverRegistration<Service>)
         }
         for child in childContainers {
             if let registration = child.lookup(type, key: key, name: name) {
