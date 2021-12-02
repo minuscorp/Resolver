@@ -239,7 +239,15 @@ public final class Resolver {
         lock.lock()
         defer { lock.unlock() }
         registrationCheck()
-        let key = String(reflecting: type.self)
+        var key = String(reflecting: type.self)
+        if let type = type as? Optional<Service> {
+            switch type {
+            case .some(let service):
+                key = String(reflecting: service)
+            case .none:
+                preconditionFailure("Never gonna happen")
+            }
+        }
         print("\(#function) \(key)")
         if let registration = root.lookup(type, name: name), let service = registration.resolve(resolver: root, args: args) {
             return service
