@@ -316,6 +316,8 @@ public final class Resolver {
                 return registration
             }
         }
+        let mirror = Mirror(reflecting: Service.Type.self)
+        dump(mirror)
         for registration in (typedRegistrations[key] ?? []) {
             print(String(reflecting: Service.self))
             print(registration as? ResolverRegistration<Service>)
