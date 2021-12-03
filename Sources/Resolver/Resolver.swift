@@ -312,10 +312,10 @@ public final class Resolver {
     /// the supplied type and name.
     private final func lookup<Service>(_ type: Service.Type, key: FullyQualifiedName, name: Resolver.Name?) -> ResolverRegistration<Service>? {
         if let name = name?.rawValue {
-            if let registration = namedRegistrations["\(key):\(name)"]?.first(where: { $0 is ResolverRegistration<Service> }) as? ResolverRegistration<Service> {
+            if let registration = namedRegistrations["\(key):\(name)"]?.compactMap({ $0 as? ResolverRegistration<Service> }).first {
                 return registration
             }
-        } else if let registration = typedRegistrations[key]?.first(where: { $0 is ResolverRegistration<Service> }) as? ResolverRegistration<Service>  {
+        } else if let registration = typedRegistrations[key]?.compactMap({ $0 as? ResolverRegistration<Service> }).first  {
             return registration
         }
         for child in childContainers {
@@ -633,7 +633,7 @@ public class ResolverScopeCache: ResolverScope {
     public override init() {}
 
     public override func resolve<Service>(registration: ResolverRegistration<Service>, resolver: Resolver, args: Any?) -> Service? {
-        if let service = cachedServices[registration.cacheKey] as? Service {
+        if let cache = cachedServices[registration.cacheKey], let service = cache as? Service {
             return service
         }
         let service = registration.instantiate(resolver: resolver, args: args)
@@ -656,7 +656,7 @@ public final class ResolverScopeGraph: ResolverScope {
     public override init() {}
 
     public override final func resolve<Service>(registration: ResolverRegistration<Service>, resolver: Resolver, args: Any?) -> Service? {
-        if let service = graph[registration.cacheKey] as? Service {
+        if let cache = graph[registration.cacheKey], let service = cache as? Service {
             return service
         }
         resolutionDepth = resolutionDepth + 1
@@ -682,7 +682,7 @@ public final class ResolverScopeShare: ResolverScope {
     public override init() {}
 
     public override final func resolve<Service>(registration: ResolverRegistration<Service>, resolver: Resolver, args: Any?) -> Service? {
-        if let service = cachedServices[registration.cacheKey]?.service as? Service {
+        if let cache = cachedServices[registration.cacheKey]?.service, let service = cache as? Service {
             return service
         }
         let service = registration.instantiate(resolver: resolver, args: args)

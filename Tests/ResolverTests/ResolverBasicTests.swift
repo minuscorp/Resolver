@@ -24,7 +24,7 @@ class ResolverBasicTests: XCTestCase {
     
     func testRegistrationAndExplicitResolution() {
         resolver.register { XYZSessionService() }
-        let session: XYZSessionService? = resolver.resolve(XYZSessionService.self)
+        let session: XYZSessionService = resolver.resolve()
         XCTAssertNotNil(session)
     }
 
