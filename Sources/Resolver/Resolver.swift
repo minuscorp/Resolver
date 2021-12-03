@@ -315,7 +315,12 @@ public final class Resolver {
             if let registration = namedRegistrations["\(key):\(name)"]?.compactMap({ $0 as? ResolverRegistration<Service> }).first {
                 return registration
             }
-        } else if let registration = typedRegistrations[key]?.compactMap({ $0 as? ResolverRegistration<Service> }).first  {
+        }
+        for registration in (typedRegistrations[key] ?? []) {
+            print(String(reflecting: Service.self))
+            print(registration as? ResolverRegistration<Service>)
+        }
+        if let registration = typedRegistrations[key]?.compactMap({ $0 as? ResolverRegistration<Service> }).first  {
             return registration
         }
         for child in childContainers {
