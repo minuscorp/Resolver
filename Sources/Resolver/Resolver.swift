@@ -176,11 +176,12 @@ public final class Resolver {
                                         factory: @escaping ResolverFactory<Service>) -> ResolverOptions<Service> {
         lock.lock()
         defer { lock.unlock() }
-        let key = String(reflecting: type.self)
+        let key = Self.fullyQualifiedName(type)
         print("\(#function) \(key)")
         let factory: ResolverFactoryAnyArguments = { (_,_) in factory() }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
-        add(registration: registration, with: key, name: name)
+        let optionalRegistration = ResolverRegistration<Service?>(resolver: self, key: key, name: name, factory: factory)
+        add(registration: registration, optionalRegistration: optionalRegistration, with: key, name: name)
         return ResolverOptions(registration: registration)
     }
 
@@ -197,11 +198,12 @@ public final class Resolver {
                                         factory: @escaping ResolverFactoryResolver<Service>) -> ResolverOptions<Service> {
         lock.lock()
         defer { lock.unlock() }
-        let key = String(reflecting: type.self)
+        let key = Self.fullyQualifiedName(type)
         print("\(#function) \(key)")
         let factory: ResolverFactoryAnyArguments = { (r,_) in factory(r) }
         let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
-        add(registration: registration, with: key, name: name)
+        let optionalRegistration = ResolverRegistration<Service?>(resolver: self, key: key, name: name, factory: factory)
+        add(registration: registration, optionalRegistration: optionalRegistration, with: key, name: name)
         return ResolverOptions(registration: registration)
     }
 
@@ -221,8 +223,9 @@ public final class Resolver {
         let key = Self.fullyQualifiedName(type)
         print("\(#function) \(key)")
         let factory: ResolverFactoryAnyArguments = { (r,a) in factory(r, Args(a)) }
-        let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory )
-        add(registration: registration, with: key, name: name)
+        let registration = ResolverRegistration<Service>(resolver: self, key: key, name: name, factory: factory)
+        let optionalRegistration = ResolverRegistration<Service?>(resolver: self, key: key, name: name, factory: factory)
+        add(registration: registration, optionalRegistration: optionalRegistration, with: key, name: name)
         return ResolverOptions(registration: registration)
     }
 
@@ -309,13 +312,11 @@ public final class Resolver {
     /// the supplied type and name.
     private final func lookup<Service>(_ type: Service.Type, key: FullyQualifiedName, name: Resolver.Name?) -> ResolverRegistration<Service>? {
         if let name = name?.rawValue {
-            if let registration = namedRegistrations["\(key):\(name)"] as? ResolverRegistration<Service> {
+            if let registration = namedRegistrations["\(key):\(name)"]?.first(where: { $0 is ResolverRegistration<Service> }) as? ResolverRegistration<Service> {
                 return registration
             }
-        } else if let registration = typedRegistrations[key] as? ResolverRegistration<Service> {
+        } else if let registration = typedRegistrations[key]?.first(where: { $0 is ResolverRegistration<Service> }) as? ResolverRegistration<Service>  {
             return registration
-        } else if let _ = typedRegistrations[key] as? ResolverRegistration<Service?> {
-            return (typedRegistrations[key] as! ResolverRegistration<Service>)
         }
         for child in childContainers {
             if let registration = child.lookup(type, key: key, name: name) {
@@ -326,11 +327,11 @@ public final class Resolver {
     }
 
     /// Internal function adds a new registration to the proper container.
-    private final func add<Service>(registration: ResolverRegistration<Service>, with key: FullyQualifiedName, name: Resolver.Name?) {
+    private final func add<Service>(registration: ResolverRegistration<Service>, optionalRegistration: ResolverRegistration<Service?>, with key: FullyQualifiedName, name: Resolver.Name?) {
         if let name = name?.rawValue {
-            namedRegistrations["\(key):\(name)"] = registration
+            namedRegistrations["\(key):\(name)"] = [registration, optionalRegistration]
         } else {
-            typedRegistrations[key] = registration
+            typedRegistrations[key] = [registration, optionalRegistration]
         }
     }
     
@@ -349,8 +350,8 @@ public final class Resolver {
     private let NONAME = "*"
     private let lock = Resolver.lock
     private var childContainers: [Resolver] = []
-    private var typedRegistrations = [FullyQualifiedName : Any]()
-    private var namedRegistrations = [String : Any]()
+    private var typedRegistrations: Dictionary<String, Array<Any>> = [:]
+    private var namedRegistrations: Dictionary<FullyQualifiedName, Array<Any>> = [:]
 }
 
 /// Resolving an instance of a service is a recursive process (service A needs a B which needs a C).
